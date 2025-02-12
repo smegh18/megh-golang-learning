@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,15 +25,15 @@ func main() {
 	options, searchTerm, files := parseFlags()
 
 	// Open output file if required
-	var output *os.File = os.Stdout
+	var output io.Writer = os.Stdout
 	if options.outputFile != "" {
-		var err error
-		output, err = os.OpenFile(options.outputFile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+		file, err := os.OpenFile(options.outputFile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error opening output file: %v\n", err)
 			os.Exit(1)
 		}
-		defer output.Close()
+		defer file.Close()
+		output = file
 	}
 
 	// Process input files
@@ -69,7 +70,7 @@ func parseFlags() (Options, string, []string) {
 	return opts, args[0], args[1:]
 }
 
-func searchStdin(searchTerm string, opts Options, output *os.File) {
+func searchStdin(searchTerm string, opts Options, output io.Writer) {
 	scanner := bufio.NewScanner(os.Stdin)
 	lines := []string{}
 	for scanner.Scan() {
@@ -78,7 +79,7 @@ func searchStdin(searchTerm string, opts Options, output *os.File) {
 	printMatches(lines, searchTerm, "STDIN", opts, output)
 }
 
-func recursiveSearch(root, searchTerm string, opts Options, output *os.File) {
+func recursiveSearch(root, searchTerm string, opts Options, output io.Writer) {
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -90,7 +91,7 @@ func recursiveSearch(root, searchTerm string, opts Options, output *os.File) {
 	})
 }
 
-func processFile(filename, searchTerm string, opts Options, output *os.File) {
+func processFile(filename, searchTerm string, opts Options, output io.Writer) {
 	file, err := os.Open(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "mygrep: %s: %v\n", filename, err)
@@ -106,7 +107,7 @@ func processFile(filename, searchTerm string, opts Options, output *os.File) {
 	printMatches(lines, searchTerm, filename, opts, output)
 }
 
-func printMatches(lines []string, searchTerm, source string, opts Options, output *os.File) {
+func printMatches(lines []string, searchTerm, source string, opts Options, output io.Writer) {
 	if opts.ignoreCase {
 		searchTerm = strings.ToLower(searchTerm)
 	}

@@ -23,17 +23,16 @@ func count(r io.Reader) countStats {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		stats.lines++                            // Count lines
-		stats.words += len(strings.Fields(line)) // Count words
-		stats.bytes += len(line) + 1             // +1 accounts for newline character
+		stats.lines++
+		stats.words += len(strings.Fields(line))
+		stats.bytes += len(line) + 1 // Assume newline exists
 	}
 
-	// Handle last line case where there is no newline character
+	// If input is non-empty, remove the last extra newline count
 	if stats.bytes > 0 {
-		stats.bytes-- // Remove extra byte counted for the last line
+		stats.bytes--
 	}
 
-	// Check for any scanning errors
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
 	}
